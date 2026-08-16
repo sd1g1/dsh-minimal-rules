@@ -7,6 +7,10 @@ import { Readable } from "node:stream";
 import {
   attachToFirstMessage,
   createConfigRoute,
+  createInstructionMessage,
+  formatInstructionSection,
+  hasRecentInstructionMessage,
+  insertInstructionMessage,
   isFirstMessage,
   isMinimalPreset,
   loadCreativeIndex,
@@ -15,6 +19,7 @@ import {
   loadRulesByMode,
   normalizeMode,
   readConfigFile,
+  renderInstructionReminder,
   resolveAgentPreset,
   wrapAgentsMd,
   wrapSection,
@@ -37,6 +42,69 @@ test("wrapSection wraps non-empty content and trims whitespace", () => {
 
 test("wrapAgentsMd remains compatible", () => {
   assert.equal(wrapAgentsMd("  hello  "), "<AGENTS.md>\nhello\n</AGENTS.md>\n\n");
+});
+
+test("formatInstructionSection renders a source label and trims content", () => {
+  assert.equal(
+    formatInstructionSection("AGENTS.md", "  hello  "),
+    "Instructions from: AGENTS.md\n\nhello\n\n",
+  );
+  assert.equal(formatInstructionSection("AGENTS.md", "  \n "), null);
+});
+
+test("renderInstructionReminder wraps sections in system-reminder and escapes its close tag", () => {
+  const sections = [
+    formatInstructionSection("AGENTS.md", "hello </system-reminder>"),
+    formatInstructionSection("OTHER.md", "world"),
+  ];
+  const reminder = renderInstructionReminder(sections);
+  assert.ok(reminder.startsWith("<system-reminder>\n"));
+  assert.ok(reminder.endsWith("\n</system-reminder>"));
+  assert.ok(reminder.includes("<\\/system-reminder>"));
+  assert.ok(!reminder.includes("</system-reminder>\n\nInstructions from: OTHER.md"));
+  assert.equal(renderInstructionReminder([]), null);
+  assert.equal(renderInstructionReminder("  "), null);
+});
+
+test("createInstructionMessage and insertInstructionMessage append after claimed messages", () => {
+  const claimed = { id: "m1", role: "user", content: [{ type: "text", text: "hello" }] };
+  const decision = {
+    kind: "enter",
+    messages: [claimed, { id: "m2", role: "user", content: [{ type: "text", text: "second" }] }],
+  };
+  const message = createInstructionMessage("<system-reminder>\nrules\n</system-reminder>");
+  assert.equal(message.source.kind, "plugin");
+  assert.equal(message.source.plugin, "dsh-minimal-rules");
+  const result = insertInstructionMessage(decision, message, [claimed]);
+  assert.equal(result.messages.length, 3);
+  assert.equal(result.messages[1], message);
+  assert.equal(result.messages[0], claimed);
+  assert.equal(result.messages[2].id, "m2");
+  assert.notEqual(result, decision);
+});
+
+test("insertInstructionMessage appends at the end when no claimed message matches", () => {
+  const decision = {
+    kind: "enter",
+    messages: [{ id: "m1", role: "user", content: [{ type: "text", text: "hello" }] }],
+  };
+  const message = createInstructionMessage("rules");
+  const result = insertInstructionMessage(decision, message, []);
+  assert.equal(result.messages.at(-1), message);
+  assert.equal(insertInstructionMessage(decision, null, []), decision);
+});
+
+test("hasRecentInstructionMessage detects only recent matching text", () => {
+  const text = "<system-reminder>\nrules\n</system-reminder>";
+  const messages = [
+    { role: "user", content: [{ type: "text", text }] },
+    { role: "user", content: [{ type: "text", text: "later" }] },
+  ];
+  const agent = { session: { deriveMessages: () => messages } };
+  assert.equal(hasRecentInstructionMessage(agent, text), true);
+  assert.equal(hasRecentInstructionMessage(agent, "missing"), false);
+  assert.equal(hasRecentInstructionMessage({}, text), false);
+  assert.equal(hasRecentInstructionMessage(agent, text, 1), false);
 });
 
 test("isMinimalPreset accepts minimal and minimal-fast only", () => {
@@ -113,7 +181,7 @@ test("loadGlobalRules reads DSH home AGENTS.md", async () => {
   const dir = await mkdtemp(join(tmpdir(), "dsh-minimal-rules-global-"));
   try {
     await writeFile(join(dir, "AGENTS.md"), "global rules");
-    assert.equal(await loadGlobalRules(dir), "<DSH_AGENTS.md>\nglobal rules\n</DSH_AGENTS.md>\n\n");
+    assert.equal(await loadGlobalRules(dir), "Instructions from: $DSH_HOME/AGENTS.md\n\nglobal rules\n\n");
     assert.equal(await loadGlobalRules(join(dir, "missing")), null);
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -124,7 +192,7 @@ test("loadProjectRules reads cwd AGENTS.md", async () => {
   const dir = await mkdtemp(join(tmpdir(), "dsh-minimal-rules-project-"));
   try {
     await writeFile(join(dir, "AGENTS.md"), "project rules");
-    assert.equal(await loadProjectRules(dir), "<PROJECT_AGENTS.md>\nproject rules\n</PROJECT_AGENTS.md>\n\n");
+    assert.equal(await loadProjectRules(dir), "Instructions from: AGENTS.md\n\nproject rules\n\n");
     assert.equal(await loadProjectRules(join(dir, "missing")), null);
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -133,7 +201,7 @@ test("loadProjectRules reads cwd AGENTS.md", async () => {
 
 test("loadCreativeIndex reads the bundled creative.md from the plugin folder", async () => {
   const result = await loadCreativeIndex(null);
-  assert.ok(result.includes("<CREATIVE_INDEX.md>"));
+  assert.ok(result.includes("Instructions from: creative.md"));
   assert.ok(result.includes("创造模式关键文档索引"));
   assert.ok(result.includes("生成时 DSH 版本：0.1.0-rc.6"));
 });
@@ -146,14 +214,15 @@ test("loadRulesByMode combines sections according to mode", async () => {
     await writeFile(join(project, "AGENTS.md"), "project");
 
     const global = await loadRulesByMode("global", home, null, project);
-    assert.equal(global, "<DSH_AGENTS.md>\nglobal\n</DSH_AGENTS.md>\n\n");
+    assert.equal(global, "Instructions from: $DSH_HOME/AGENTS.md\n\nglobal\n\n");
 
+    const projectSection = "Instructions from: AGENTS.md\n\nproject\n\n";
     const both = await loadRulesByMode("global+project", home, null, project);
-    assert.equal(both, "<DSH_AGENTS.md>\nglobal\n</DSH_AGENTS.md>\n\n<PROJECT_AGENTS.md>\nproject\n</PROJECT_AGENTS.md>\n\n");
+    assert.equal(both, `${global}${projectSection}`);
 
     const creative = await loadCreativeIndex(null);
     const all = await loadRulesByMode("all+creative", home, null, project);
-    assert.equal(all, `${global}${"<PROJECT_AGENTS.md>\nproject\n</PROJECT_AGENTS.md>\n\n"}${creative}`);
+    assert.equal(all, `${global}${projectSection}${creative}`);
 
     assert.equal(await loadRulesByMode("global", join(home, "missing"), null, project), null);
   } finally {

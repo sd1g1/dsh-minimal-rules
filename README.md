@@ -1,6 +1,6 @@
 # dsh-minimal-rules
 
-DSH 插件：在极简模式（`minimal` 或 `dsh-minimal-bash-fix` 提供的 `minimal-fast`）下，把规则内容自动附加到首条用户消息开头，并在输入框权限下拉菜单右侧提供模式下拉菜单。
+DSH 插件：在极简模式（`minimal` 或 `dsh-minimal-bash-fix` 提供的 `minimal-fast`）下，把规则内容渲染成独立的 `<system-reminder>` 消息注入到当前用户消息之后，并在输入框权限下拉菜单右侧提供模式下拉菜单。
 
 ## 安装
 
@@ -23,8 +23,9 @@ dsh plugin --profile web add github:sd1g1/dsh-minimal-rules
 默认模式为 `global+project`。
 
 - 只对 `minimal` / `minimal-fast` 极简模式生效。
-- 只在会话首条消息时注入，后续轮次不会重复附加。
-- 规则内容使用 XML 风格标记包裹。
+- 每个会话只注入一次，不修改既有历史消息；重启 DSH 后恢复会话时，如果近期历史中已没有当前规则，会重新注入一次。
+- 规则以独立 user 消息注入，使用 `<system-reminder>` 包裹并带有来源路径。
+- 修改 `AGENTS.md` 或切换模式后，重启 DSH 对新会话/恢复会话生效；当前运行中的会话不会改写已有历史。
 - 模式保存在 `~/.dsh/dsh-minimal-rules.json`。
 
 ### 创造模式关键文档索引
