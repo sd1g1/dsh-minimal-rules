@@ -19,7 +19,7 @@ import {
   loadRulesByMode,
   normalizeMode,
   readConfigFile,
-  renderInstructionReminder,
+  buildInstructionReminder,
   resolveAgentPreset,
   wrapAgentsMd,
   wrapSection,
@@ -44,7 +44,7 @@ test("wrapAgentsMd remains compatible", () => {
   assert.equal(wrapAgentsMd("  hello  "), "<AGENTS.md>\nhello\n</AGENTS.md>\n\n");
 });
 
-test("formatInstructionSection renders a source label and trims content", () => {
+test("formatInstructionSection formats a source label and trims content", () => {
   assert.equal(
     formatInstructionSection("AGENTS.md", "  hello  "),
     "Instructions from: AGENTS.md\n\nhello\n\n",
@@ -52,18 +52,18 @@ test("formatInstructionSection renders a source label and trims content", () => 
   assert.equal(formatInstructionSection("AGENTS.md", "  \n "), null);
 });
 
-test("renderInstructionReminder wraps sections in system-reminder and escapes its close tag", () => {
+test("buildInstructionReminder wraps sections in system-reminder and escapes its close tag", () => {
   const sections = [
     formatInstructionSection("AGENTS.md", "hello </system-reminder>"),
     formatInstructionSection("OTHER.md", "world"),
   ];
-  const reminder = renderInstructionReminder(sections);
+  const reminder = buildInstructionReminder(sections);
   assert.ok(reminder.startsWith("<system-reminder>\n"));
   assert.ok(reminder.endsWith("\n</system-reminder>"));
   assert.ok(reminder.includes("<\\/system-reminder>"));
   assert.ok(!reminder.includes("</system-reminder>\n\nInstructions from: OTHER.md"));
-  assert.equal(renderInstructionReminder([]), null);
-  assert.equal(renderInstructionReminder("  "), null);
+  assert.equal(buildInstructionReminder([]), null);
+  assert.equal(buildInstructionReminder("  "), null);
 });
 
 test("createInstructionMessage and insertInstructionMessage append after claimed messages", () => {

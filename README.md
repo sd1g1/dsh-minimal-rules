@@ -1,6 +1,6 @@
 # dsh-minimal-rules
 
-DSH 插件：在极简模式（`minimal` 或 `dsh-minimal-bash-fix` 提供的 `minimal-fast`）下，把规则内容渲染成独立的 `<system-reminder>` 消息注入到当前用户消息之后，并在输入框权限下拉菜单右侧提供模式下拉菜单。
+DSH 插件：在极简模式（`minimal` 或 `dsh-minimal-bash-fix` 提供的 `minimal-fast`）下，把规则内容组装成独立的 `<system-reminder>` user 消息注入到当前用户消息之后，并在输入框权限下拉菜单右侧提供模式下拉菜单。
 
 ## 安装
 
