@@ -2,37 +2,38 @@
 
 追求最高的简洁性，只保留必要的复杂 
 
-# 本机cli
--  推荐使用`rg` 替代 `grep`、`fd` 替代 `find`，输出更干净且速度更快。
-- `gh`命令可用来访问github
+# cli
+
+-  使用`rg` 替代 `grep`,`fd` 替代 `find`
+- `gh`可用来访问github
 
 # 网络搜索
 
-使用 Exa API 的本地搜索脚本：`./web-search`。
+使用 Exa API 的本地搜索脚本：`~/.dsh/web-search`。
 
 ## 示例
 
 ```bash
 # 默认 auto + highlights，返回 10 条
-docs/web-search "Next.js route handler authentication example"
+web-search "Next.js route handler authentication example"
 
 # 指定数量/类型
-docs/web-search -n 10 -t deep "Rust async runtime comparison"
+web-search -n 10 -t deep "Rust async runtime comparison"
 
 # 只看 URL/元数据
-docs/web-search --no-contents "Fedora 44 release notes"
+web-search --no-contents "Fedora 44 release notes"
 
 # 指定域名/新鲜度
-docs/web-search --include-domains arxiv.org,github.com --max-age-hours 24 "LLM agent survey"
+web-search --include-domains arxiv.org,github.com --max-age-hours 24 "LLM agent survey"
 
 # 结构化输出
-docs/web-search --type deep \
+web-search --type deep \
   --system-prompt "Prefer official sources" \
   --output-schema '{"type":"object","properties":{"summary":{"type":"string"}},"required":["summary"]}' \
   "Exa API overview"
 
 # 原始 JSON
-docs/web-search --json "query"
+web-search --json "query"
 ```
 
 ## 参数
