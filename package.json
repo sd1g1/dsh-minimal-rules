@@ -1,0 +1,67 @@
+{
+  "name": "@local/dsh-minimal-rules",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DSH 插件：在极简模式（minimal / minimal-fast）下按 global / global+project / all+creative 模式自动注入规则内容，并提供可持久化的输入框下拉菜单。",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/**/*.js",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "example",
+    "creative.md"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-conversation": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6",
+    "react": "^18.2.0"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "minimal",
+    "AGENTS.md",
+    "web",
+    "plugin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sd1g1/dsh-minimal-rules.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sd1g1/dsh-minimal-rules/issues"
+  },
+  "homepage": "https://github.com/sd1g1/dsh-minimal-rules#readme",
+  "engines": {
+    "node": ">=20"
+  }
+}

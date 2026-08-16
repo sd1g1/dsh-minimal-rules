@@ -1,0 +1,5 @@
+# DSH Bundle 补丁：安装 minimal-rules 运行时行及其浏览器半边。
+# 作为 dsh.profile.bundles 的一层加载；可从自己的 profile cordis.patch.yml 按 id 覆盖这一行。
+- insert:
+    - id: ui-minimal-rules
+      name: '@local/dsh-minimal-rules'
