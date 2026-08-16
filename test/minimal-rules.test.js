@@ -73,6 +73,8 @@ test("createInstructionMessage and insertInstructionMessage append after claimed
     messages: [claimed, { id: "m2", role: "user", content: [{ type: "text", text: "second" }] }],
   };
   const message = createInstructionMessage("<system-reminder>\nrules\n</system-reminder>");
+  assert.equal(typeof message.id, "string");
+  assert.ok(message.id.length > 0);
   assert.equal(message.source.kind, "plugin");
   assert.equal(message.source.plugin, "dsh-minimal-rules");
   const result = insertInstructionMessage(decision, message, [claimed]);
